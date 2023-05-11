@@ -31,8 +31,8 @@ router.get("/", async (req, res) => {
   // Si funciona la lectura...
   try {
     // Recogemos las query params de esta manera req.query.parametro.
-    const page = req.query.page;
-    const limit = parseInt(req.query.limit);
+    const page = req.query.page ? parseInt(req.query.page) : 1;
+    const limit = req.query.limit ? parseInt(req.query.limit) : 10;
 
     const books = await Book.find() // Devolvemos los books si funciona. Con modelo.find().
       .populate(["author", "publisher"])
