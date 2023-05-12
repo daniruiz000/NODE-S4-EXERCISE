@@ -15,7 +15,11 @@ function App() {
       <h2>Libros</h2>
       <ul>
         {books?.data.map((book) => {
-          return <li key={book._id}>{book.title}</li>;
+          return (
+            <li key={book._id}>
+              {book.title} ({book.author.name})
+            </li>
+          );
         })}
       </ul>
     </div>
