@@ -22,7 +22,7 @@ const main = async () => {
   const server = express(); // Definimos el server. Lo gestionará express.
   server.use(express.json()); // Sepa interpretar los JSON
   server.use(express.urlencoded({ extended: false })); //  Sepa interpretar bien los parametros de las rutas.
-  server.use(cors({ origin: "*" })); // Utilice la libreria cors para gestionar la seguridad de acceso a la API
+  server.use(cors({ origin: ["http://localhost:3000", "http://localhost:3001", "https://node-s4-exercise.vercel.app"] })); // Utilice la libreria cors para gestionar la seguridad de acceso a la API
 
   // Definimos el routerHome que será el encargado de manejar las peticiones a nuestras rutas en la raíz.
   const routerHome = express.Router();
