@@ -18,7 +18,7 @@ const router = express.Router();
 por página para no saturar al navegador (CRUD: READ):
 */
 
-router.get("/", async (req, res) => {
+router.get("/", async (req, res, next) => {
   // Si funciona la lectura...
   try {
     // Recogemos las query params de esta manera req.query.parametro.
@@ -44,7 +44,7 @@ router.get("/", async (req, res) => {
 
     // Si falla la lectura...
   } catch (error) {
-    res.status(500).json(error); //  Devolvemos un código de error 500 y el error.
+    next(error);
   }
 });
 
@@ -56,7 +56,7 @@ router.get("/", async (req, res) => {
 
 //  Endpoint para recuperar un publisher en concreto a través de su id ( modelo.findById()) (CRUD: READ):
 
-router.get("/:id", async (req, res) => {
+router.get("/:id", async (req, res, next) => {
   // Si funciona la lectura...
   try {
     const id = req.params.id; //  Recogemos el id de los parametros de la ruta.
@@ -76,7 +76,7 @@ router.get("/:id", async (req, res) => {
 
     // Si falla la lectura...
   } catch (error) {
-    res.status(500).json(error); //  Devolvemos un código de error 500 y el error.
+    next(error);
   }
 });
 
@@ -87,7 +87,7 @@ router.get("/:id", async (req, res) => {
 
 //  Endpoint para buscar un publisher por el nombre ( modelo.findById({name: name})) (CRUD: Operación Custom. No es CRUD):
 
-router.get("/name/:name", async (req, res) => {
+router.get("/name/:name", async (req, res, next) => {
   const publisherName = req.params.name;
   // Si funciona la lectura...
   try {
@@ -103,7 +103,7 @@ router.get("/name/:name", async (req, res) => {
 
     // Si falla la lectura...
   } catch (error) {
-    res.status(500).json(error); //  Devolvemos un código de error 500 y el error.
+    next(error);
   }
 });
 
@@ -114,7 +114,7 @@ router.get("/name/:name", async (req, res) => {
 
 //  Endpoint para añadir elementos (CRUD: CREATE):
 
-router.post("/", async (req, res) => {
+router.post("/", async (req, res, next) => {
   // Si funciona la escritura...
   try {
     const publisher = new Publisher(req.body); //     Un nuevo publisher es un nuevo modelo de la BBDD que tiene un Scheme que valida la estructura de esos datos que recoge del body de la petición.
@@ -123,12 +123,7 @@ router.post("/", async (req, res) => {
 
     // Si falla la escritura...
   } catch (error) {
-    console.error(error);
-    if (error.name === "ValidationError") {
-      res.status(400).json(error);
-    } else {
-      res.status(500).json(error);
-    }
+    next(error);
   }
 });
 
@@ -139,7 +134,7 @@ router.post("/", async (req, res) => {
 
 //  Endpoint para resetear los datos de publisher:
 
-router.delete("/reset", async (req, res) => {
+router.delete("/reset", async (req, res, next) => {
   // Si funciona el reseteo...
   try {
     await resetPublishers();
@@ -147,8 +142,7 @@ router.delete("/reset", async (req, res) => {
 
     // Si falla el reseteo...
   } catch (error) {
-    console.error(error);
-    res.status(500).json(error); //  Devolvemos un código 500 de error si falla el reseteo de datos y el error.
+    next(error);
   }
 });
 
@@ -156,7 +150,7 @@ router.delete("/reset", async (req, res) => {
 
 //  Endpoin para eliminar publisher identificado por id (CRUD: DELETE):
 
-router.delete("/:id", async (req, res) => {
+router.delete("/:id", async (req, res, next) => {
   // Si funciona el borrado...
   try {
     const id = req.params.id; //  Recogemos el id de los parametros de la ruta.
@@ -169,7 +163,7 @@ router.delete("/:id", async (req, res) => {
 
     // Si falla el borrado...
   } catch (error) {
-    res.status(500).json(error); //  Devolvemos un código 500 de error si falla el delete y el error.
+    next(error);
   }
 });
 
@@ -182,7 +176,7 @@ fetch("http://localhost:3000/publisher/id del publisher a borrar",{"method":"DEL
 
 //  Endpoin para actualizar un elemento identificado por id (CRUD: UPDATE):
 
-router.put("/:id", async (req, res) => {
+router.put("/:id", async (req, res, next) => {
   // Si funciona la actualización...
   try {
     const id = req.params.id; //  Recogemos el id de los parametros de la ruta.
@@ -195,12 +189,7 @@ router.put("/:id", async (req, res) => {
 
     // Si falla la actualización...
   } catch (error) {
-    console.error(error);
-    if (error.name === "ValidationError") {
-      res.status(400).json(error);
-    } else {
-      res.status(500).json(error);
-    }
+    next(error);
   }
 });
 

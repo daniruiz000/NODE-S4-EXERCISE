@@ -1,9 +1,14 @@
 // Importamos express:
 const express = require("express");
+const multer = require("multer");
+const fs = require("fs");
+
+const upload = multer({ dest: "public" });
 
 // Importamos el modelo que nos sirve tanto para importar datos como para leerlos:
 const { Author } = require("../models/Author.js");
 const { Book } = require("../models/Book.js");
+
 // Importamos la función que nos sirve para resetear los author:
 const { resetAuthors } = require("../utils/resetAuthors.js");
 
@@ -18,7 +23,7 @@ const router = express.Router();
 por página para no saturar al navegador (CRUD: READ):
 */
 
-router.get("/", async (req, res) => {
+router.get("/", async (req, res, next) => {
   // Si funciona la lectura...
   try {
     // Recogemos las query params de esta manera req.query.parametro.
@@ -44,7 +49,7 @@ router.get("/", async (req, res) => {
 
     // Si falla la lectura...
   } catch (error) {
-    res.status(500).json(error); //  Devolvemos un código de error 500 y el error.
+    next(error);
   }
 });
 
@@ -56,7 +61,7 @@ router.get("/", async (req, res) => {
 
 //  Endpoint para recuperar un author en concreto a través de su id ( modelo.findById()) (CRUD: READ):
 
-router.get("/:id", async (req, res) => {
+router.get("/:id", async (req, res, next) => {
   // Si funciona la lectura...
   try {
     const id = req.params.id; //  Recogemos el id de los parametros de la ruta.
@@ -76,7 +81,7 @@ router.get("/:id", async (req, res) => {
 
     // Si falla la lectura...
   } catch (error) {
-    res.status(500).json(error); //  Devolvemos un código de error 500 y el error.
+    next(error);
   }
 });
 
@@ -87,7 +92,7 @@ router.get("/:id", async (req, res) => {
 
 //  Endpoint para buscar un author por el nombre ( modelo.findById({name: name})) (CRUD: Operación Custom. No es CRUD):
 
-router.get("/name/:name", async (req, res) => {
+router.get("/name/:name", async (req, res, next) => {
   const authorName = req.params.name;
   // Si funciona la lectura...
   try {
@@ -103,7 +108,7 @@ router.get("/name/:name", async (req, res) => {
 
     // Si falla la lectura...
   } catch (error) {
-    res.status(500).json(error); //  Devolvemos un código de error 500 y el error.
+    next(error);
   }
 });
 
@@ -114,7 +119,7 @@ router.get("/name/:name", async (req, res) => {
 
 //  Endpoint para añadir elementos (CRUD: CREATE):
 
-router.post("/", async (req, res) => {
+router.post("/", async (req, res, next) => {
   // Si funciona la escritura...
   try {
     const author = new Author(req.body); //     Un nuevo author es un nuevo modelo de la BBDD que tiene un Scheme que valida la estructura de esos datos que recoge del body de la petición.
@@ -123,12 +128,7 @@ router.post("/", async (req, res) => {
 
     // Si falla la escritura...
   } catch (error) {
-    console.error(error);
-    if (error.name === "ValidationError") {
-      res.status(400).json(error);
-    } else {
-      res.status(500).json(error);
-    }
+    next(error);
   }
 });
 
@@ -139,7 +139,7 @@ router.post("/", async (req, res) => {
 
 //  Endpoint para resetear los datos de author:
 
-router.delete("/reset", async (req, res) => {
+router.delete("/reset", async (req, res, next) => {
   // Si funciona el reseteo...
   try {
     await resetAuthors();
@@ -147,8 +147,7 @@ router.delete("/reset", async (req, res) => {
 
     // Si falla el reseteo...
   } catch (error) {
-    console.error(error);
-    res.status(500).json(error); //  Devolvemos un código 500 de error si falla el reseteo de datos y el error.
+    next(error);
   }
 });
 
@@ -156,7 +155,7 @@ router.delete("/reset", async (req, res) => {
 
 //  Endpoint para eliminar author identificado por id (CRUD: DELETE):
 
-router.delete("/:id", async (req, res) => {
+router.delete("/:id", async (req, res, next) => {
   // Si funciona el borrado...
   try {
     const id = req.params.id; //  Recogemos el id de los parametros de la ruta.
@@ -169,7 +168,7 @@ router.delete("/:id", async (req, res) => {
 
     // Si falla el borrado...
   } catch (error) {
-    res.status(500).json(error); //  Devolvemos un código 500 de error si falla el delete y el error.
+    next(error);
   }
 });
 
@@ -182,7 +181,7 @@ fetch("http://localhost:3000/author/id del author a borrar",{"method":"DELETE","
 
 //  Endpoint para actualizar un elemento identificado por id (CRUD: UPDATE):
 
-router.put("/:id", async (req, res) => {
+router.put("/:id", async (req, res, next) => {
   // Si funciona la actualización...
   try {
     const id = req.params.id; //  Recogemos el id de los parametros de la ruta.
@@ -195,12 +194,7 @@ router.put("/:id", async (req, res) => {
 
     // Si falla la actualización...
   } catch (error) {
-    console.error(error);
-    if (error.name === "ValidationError") {
-      res.status(400).json(error);
-    } else {
-      res.status(500).json(error);
-    }
+    next(error);
   }
 });
 
@@ -211,5 +205,34 @@ fetch("http://localhost:3000/author/id del author a actualizar",{"body": JSON.st
 */
 
 //  ------------------------------------------------------------------------------------------
+//  Endpoin para asociar un logo a una author:
+
+router.post("/image-upload", upload.single("image"), async (req, res, next) => {
+  try {
+    // Renombrado de la imágen
+    const originalname = req.file.originalname;
+    const path = req.file.path;
+    const newPath = path + "_" + originalname;
+    fs.renameSync(path, newPath);
+
+    // Busqueda de la marca
+    const authorId = req.body.authorId;
+    const author = await Author.findById(authorId);
+
+    if (author) {
+      author.image = newPath;
+      await author.save();
+      res.json(author);
+      console.log("Marca modificada correctamente");
+    } else {
+      fs.unlinkSync(newPath);
+      res.status(404).send("Marca no encontrada");
+    }
+  } catch (error) {
+    next(error);
+  }
+});
+//  ------------------------------------------------------------------------------------------
+
 // Exportamos
 module.exports = { authorRouter: router };

@@ -8,6 +8,7 @@ const cors = require("cors");
 const { bookRouter } = require("./routes/book.routes"); //  LO IMPORTAMOS COMO UN OBJETO.
 const { authorRouter } = require("./routes/author.routes");
 const { publisherRouter } = require("./routes/publisher.routes");
+const { fileUploadRouter } = require("./routes/fileUpload.routes");
 
 // --------------------------------------------------------------------------------------------
 
@@ -19,10 +20,10 @@ const main = async () => {
 
   //  Configuración del server.
   const PORT = 3000; //  Definimos el puerto..
-  const server = express(); // Definimos el server. Lo gestionará express.
-  server.use(express.json()); // Sepa interpretar los JSON
-  server.use(express.urlencoded({ extended: false })); //  Sepa interpretar bien los parametros de las rutas.
-  server.use(cors({ origin: ["http://localhost:3000", "http://localhost:3001"] })); // Utilice la libreria cors para gestionar la seguridad de acceso a la API
+  const app = express(); // Definimos el app. Lo gestionará express.
+  app.use(express.json()); // Sepa interpretar los JSON
+  app.use(express.urlencoded({ extended: false })); //  Sepa interpretar bien los parametros de las rutas.
+  app.use(cors({ origin: ["http://localhost:3000", "http://localhost:3001"] })); // Utilice la libreria cors para gestionar la seguridad de acceso a la API
 
   // Definimos el routerHome que será el encargado de manejar las peticiones a nuestras rutas en la raíz.
   const routerHome = express.Router();
@@ -39,15 +40,38 @@ const main = async () => {
     res.status(404).send("Lo sentimos :( No hemos encontrado la página requerida.");
   });
 
+  // Middlewares de aplicación(afecta a todas las rutas):
+  // Ejemplo de Middleware de logs en consola.
+  app.use((req, res, next) => {
+    const date = new Date();
+    console.log(`Petición de tipo ${req.method} a la url ${req.originalUrl} el ${date}`);
+    next(); // Continua el código
+  });
+
   // Asignación de los routers para las diferentes rutas creadas:
   //  Usamos las rutas (el orden es importante más restrictivos a menos):
-  server.use("/publisher", publisherRouter); //  Le decimos al server que utilice el publisherRouter importado para gestionar las rutas que tengan "/publisher".
-  server.use("/author", authorRouter); //  Le decimos al server que utilice el authorRouter importado para gestionar las rutas que tengan "/author".
-  server.use("/book", bookRouter); //  Le decimos al server que utilice el bookRouter importado para gestionar las rutas que tengan "/book".
-  server.use("/", routerHome); //  Decimos al server que utilice el routerHome en la raíz.
+  app.use("/file-upload", fileUploadRouter);
+  app.use("/publisher", publisherRouter); //  Le decimos al app que utilice el publisherRouter importado para gestionar las rutas que tengan "/publisher".
+  app.use("/author", authorRouter); //  Le decimos al app que utilice el authorRouter importado para gestionar las rutas que tengan "/author".
+  app.use("/book", bookRouter); //  Le decimos al app que utilice el bookRouter importado para gestionar las rutas que tengan "/book".
+  app.use("/", routerHome); //  Decimos al app que utilice el routerHome en la raíz.
 
-  //  Levantamos el server en el puerto indicado:
-  server.listen(PORT, () => {
+  // Ejemplo de Middleware de gestión de errores.
+  app.use((err, req, res, next) => {
+    console.log("*** INICIO DE ERROR ***");
+    console.log(`Petición fallida de tipo ${req.method} a la url ${req.originalUrl}.`);
+    console.log(err);
+    console.log("*** FIN DE ERROR ***");
+
+    if (err.name === "ValidationError") {
+      res.status(400).json(err);
+    } else {
+      res.status(500).json(err);
+    }
+  });
+
+  //  Levantamos el app en el puerto indicado:
+  app.listen(PORT, () => {
     console.log(`Server levantado en puerto ${PORT}`);
   });
 };

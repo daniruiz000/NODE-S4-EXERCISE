@@ -27,7 +27,7 @@ const router = express.Router();
 por página para no saturar al navegador (CRUD: READ):
 */
 
-router.get("/", async (req, res) => {
+router.get("/", async (req, res, next) => {
   // Si funciona la lectura...
   try {
     // Recogemos las query params de esta manera req.query.parametro.
@@ -55,7 +55,7 @@ router.get("/", async (req, res) => {
 
     // Si falla la lectura...
   } catch (error) {
-    res.status(500).json(error); //  Devolvemos un código de error 500 y el error.
+    next(error);
   }
 });
 
@@ -67,7 +67,7 @@ router.get("/", async (req, res) => {
 
 //  Endpoint para recuperar un book en concreto a través de su id ( modelo.findById()) (CRUD: READ):
 
-router.get("/:id", async (req, res) => {
+router.get("/:id", async (req, res, next) => {
   // Si funciona la lectura...
   try {
     const id = req.params.id; //  Recogemos el id de los parametros de la ruta.
@@ -80,7 +80,7 @@ router.get("/:id", async (req, res) => {
 
     // Si falla la lectura...
   } catch (error) {
-    res.status(500).json(error); //  Devolvemos un código de error 500 y el error.
+    next(error);
   }
 });
 
@@ -91,7 +91,7 @@ router.get("/:id", async (req, res) => {
 
 //  Endpoint para buscar un book por el title ( modelo.findById({firstName: name})) (CRUD: Operación Custom. No es CRUD):
 
-router.get("/title/:title", async (req, res) => {
+router.get("/title/:title", async (req, res, next) => {
   const title = req.params.title;
   // Si funciona la lectura...
   try {
@@ -104,7 +104,7 @@ router.get("/title/:title", async (req, res) => {
 
     // Si falla la lectura...
   } catch (error) {
-    res.status(500).json(error); //  Devolvemos un código de error 500 y el error.
+    next(error);
   }
 });
 
@@ -115,7 +115,7 @@ router.get("/title/:title", async (req, res) => {
 
 //  Endpoint para añadir elementos (CRUD: CREATE):
 
-router.post("/", async (req, res) => {
+router.post("/", async (req, res, next) => {
   // Si funciona la escritura...
   try {
     const book = new Book(req.body); //     Un nuevo book es un nuevo modelo de la BBDD que tiene un Scheme que valida la estructura de esos datos que recoge del body de la petición.
@@ -124,12 +124,7 @@ router.post("/", async (req, res) => {
 
     // Si falla la escritura...
   } catch (error) {
-    console.error(error);
-    if (error.name === "ValidationError") {
-      res.status(400).json(error);
-    } else {
-      res.status(500).json(error);
-    }
+    next(error);
   }
 });
 
@@ -159,8 +154,7 @@ router.delete("/reset", async (req, res, next) => {
     }
     // Si falla el reseteo...
   } catch (error) {
-    console.error(error);
-    res.status(500).send(error);
+    next(error);
   }
 });
 
@@ -168,7 +162,7 @@ router.delete("/reset", async (req, res, next) => {
 
 //  Endpoint para eliminar book identificado por id (CRUD: DELETE):
 
-router.delete("/:id", async (req, res) => {
+router.delete("/:id", async (req, res, next) => {
   // Si funciona el borrado...
   try {
     const id = req.params.id; //  Recogemos el id de los parametros de la ruta.
@@ -181,7 +175,7 @@ router.delete("/:id", async (req, res) => {
 
     // Si falla el borrado...
   } catch (error) {
-    res.status(500).json(error); //  Devolvemos un código 500 de error si falla el delete y el error.
+    next(error);
   }
 });
 
@@ -194,7 +188,7 @@ fetch("http://localhost:3000/book/id del book a borrar",{"method":"DELETE","head
 
 //  Endpoint para actualizar un elemento identificado por id (CRUD: UPDATE):
 
-router.put("/:id", async (req, res) => {
+router.put("/:id", async (req, res, next) => {
   // Si funciona la actualización...
   try {
     const id = req.params.id; //  Recogemos el id de los parametros de la ruta.
@@ -207,12 +201,7 @@ router.put("/:id", async (req, res) => {
 
     // Si falla la actualización...
   } catch (error) {
-    console.error(error);
-    if (error.name === "ValidationError") {
-      res.status(400).json(error);
-    } else {
-      res.status(500).json(error);
-    }
+    next(error);
   }
 });
 

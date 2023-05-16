@@ -9,6 +9,7 @@ module.exports = {
   parserOptions: {
     ecmaVersion: "latest",
   },
+  ignorePatterns: ["front"],
   rules: {
     "semi": "off",
     "space-before-function-paren": "off",
