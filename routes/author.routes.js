@@ -223,10 +223,10 @@ router.post("/image-upload", upload.single("image"), async (req, res, next) => {
       author.image = newPath;
       await author.save();
       res.json(author);
-      console.log("Marca modificada correctamente");
+      console.log("Autor modificado correctamente");
     } else {
       fs.unlinkSync(newPath);
-      res.status(404).send("Marca no encontrada");
+      res.status(404).send("Autor no encontrado");
     }
   } catch (error) {
     next(error);
