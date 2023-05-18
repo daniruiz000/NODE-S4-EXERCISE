@@ -51,6 +51,7 @@ const main = async () => {
   // Asignación de los routers para las diferentes rutas creadas:
   //  Usamos las rutas (el orden es importante más restrictivos a menos):
   app.use("/file-upload", fileUploadRouter);
+  app.use("/public", express.static("public"));
   app.use("/publisher", publisherRouter); //  Le decimos al app que utilice el publisherRouter importado para gestionar las rutas que tengan "/publisher".
   app.use("/author", authorRouter); //  Le decimos al app que utilice el authorRouter importado para gestionar las rutas que tengan "/author".
   app.use("/book", bookRouter); //  Le decimos al app que utilice el bookRouter importado para gestionar las rutas que tengan "/book".

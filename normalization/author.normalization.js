@@ -8,7 +8,7 @@ const normalizationAuthor = async () => {
     await connect();
     console.log("Conexión realizada correctamente");
 
-    const authors = await Author.find();
+    const authors = await Author.find().select("+password");
     console.log(`Hemos recuperado ${authors.length} autores de la base de datos`);
     // Las modificaciones se realizan según las reglas de negocio, se pueden inclusoeliminar datos que no sean correctos
 

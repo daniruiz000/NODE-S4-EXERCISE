@@ -5,6 +5,13 @@ const fs = require("fs");
 
 const upload = multer({ dest: "public" });
 
+// Importamos bcrypt:
+const bcrypt = require("bcrypt");
+
+const { generateToken } = require("../utils/token");
+
+const { isAuth } = require("../middlewares/author.middleware");
+
 // Importamos el modelo que nos sirve tanto para importar datos como para leerlos:
 const { Author } = require("../models/Author.js");
 const { Book } = require("../models/Book.js");
@@ -19,6 +26,31 @@ const router = express.Router();
 // ------------------------------- ENDPOINTS DE /author ---------------------------------------
 // --------------------------------------------------------------------------------------------
 
+// Middleware previo al get de autores para comprobar los parametros:
+
+router.get("/", (req, res, next) => {
+  try {
+    console.log("Estamos en el Middleware que comprueba los parámetros");
+
+    const page = req.query.page ? parseInt(req.query.page) : 1;
+    const limit = req.query.limit ? parseInt(req.query.limit) : 10;
+
+    if (!isNaN(page) && !isNaN(limit) && page > 0 && limit > 0) {
+      req.query.page = page;
+      req.query.limit = limit;
+      next();
+    } else {
+      console.log("Parametros no validos:");
+      console.log(JSON.stringify(req.query));
+      res.status(400).json({ error: "Params are not valid" });
+    }
+  } catch (error) {
+    next(error);
+  }
+});
+
+//  ------------------------------------------------------------------------------------------
+
 /*  Endpoint para recuperar todos los authors de manera paginada en función de un limite de elementos a mostrar
 por página para no saturar al navegador (CRUD: READ):
 */
@@ -27,8 +59,7 @@ router.get("/", async (req, res, next) => {
   // Si funciona la lectura...
   try {
     // Recogemos las query params de esta manera req.query.parametro.
-    const page = req.query.page ? parseInt(req.query.page) : 1;
-    const limit = req.query.limit ? parseInt(req.query.limit) : 10;
+    const { page, limit } = req.query;
 
     const authors = await Author.find() // Devolvemos los authors si funciona. Con modelo.find().
       .limit(limit) // La función limit se ejecuta sobre el .find() y le dice que coga un número limitado de elementos, coge desde el inicio a no ser que le añadamos...
@@ -155,10 +186,15 @@ router.delete("/reset", async (req, res, next) => {
 
 //  Endpoint para eliminar author identificado por id (CRUD: DELETE):
 
-router.delete("/:id", async (req, res, next) => {
+router.delete("/:id", isAuth, async (req, res, next) => {
   // Si funciona el borrado...
   try {
     const id = req.params.id; //  Recogemos el id de los parametros de la ruta.
+
+    if (req.author.id !== id && req.author.email !== "admin@gmail.com") {
+      return res.status(401).json({ error: "No tienes autorización para realizar esta operación" });
+    }
+
     const authorDeleted = await Author.findByIdAndDelete(id); // Esperamos a que nos devuelve la info del author eliminado que busca y elimina con el metodo findByIdAndDelete(id del author a eliminar).
     if (authorDeleted) {
       res.json(authorDeleted); //  Devolvemos el author eliminado en caso de que exista con ese id.
@@ -181,13 +217,23 @@ fetch("http://localhost:3000/author/id del author a borrar",{"method":"DELETE","
 
 //  Endpoint para actualizar un elemento identificado por id (CRUD: UPDATE):
 
-router.put("/:id", async (req, res, next) => {
+router.put("/:id", isAuth, async (req, res, next) => {
   // Si funciona la actualización...
   try {
     const id = req.params.id; //  Recogemos el id de los parametros de la ruta.
+
+    if (req.author.id !== id && req.author.email !== "admin@gmail.com") {
+      return res.status(401).json({ error: "No tienes autorización para realizar esta operación" });
+    }
+
     const authorUpdated = await Author.findByIdAndUpdate(id, req.body, { new: true, runValidators: true }); // Esperamos que devuelva la info del author actualizado al que tambien hemos pasado un objeto con los campos q tiene que acualizar en la req del body de la petición. {new: true} Le dice que nos mande el author actualizado no el antiguo. Lo busca y elimina con el metodo findByIdAndDelete(id del author a eliminar).
     if (authorUpdated) {
-      res.json(authorUpdated); //  Devolvemos el author actualizado en caso de que exista con ese id.
+      Object.assign(authorUpdated, req.body); //  Al authorUpdate le pasamos las propiedades que vengan de req.body
+      await authorUpdated.save(); // Guardamos el usuario actualizado
+      //  Quitamos password de la respuesta
+      const authorToSend = authorUpdated.toObject();
+      delete authorToSend.password;
+      res.json(authorToSend); //  Devolvemos el autor actualizado en caso de que exista con ese id.
     } else {
       res.status(404).json({}); //  Devolvemos un código 404 y un objeto vacio en caso de que no exista con ese id.
     }
@@ -232,6 +278,45 @@ router.post("/image-upload", upload.single("image"), async (req, res, next) => {
     next(error);
   }
 });
+
+//  ------------------------------------------------------------------------------------------
+
+//  Endpoint para login de autors:
+
+router.post("/login", async (req, res, next) => {
+  // Si funciona la escritura...
+  try {
+    const { email, password } = req.body; // Recoge email y password del body de la req
+    // Comprobamos que nos mandan el email y el autor.
+    if (!email || !password) {
+      return res.status(400).json({ error: "Se deben especificar los campos email y password" }); // Un return dentro de luna función hace que esa función no continue.
+    }
+    // Comprobamos que existe el autor
+    const author = await Author.findOne({ email }).select("+password"); // Le decimos que nos muestre la propiedad password que por defecto en el modelo viene con select: false.
+    if (!author) {
+      return res.status(401).json({ error: "Email y/o password incorrectos" });
+    }
+    // Comprobamos que la password que nos envian se corresponde con la que tiene el usuario.
+    const match = bcrypt.compare(password, author.password); // compara el password encriptado con la password enviada sin encriptar.
+    if (match) {
+      // Quitamos password de la respuesta.
+      const authorWithoutPass = author.toObject(); // Nos devuelve esta entidad pero modificable.
+      delete authorWithoutPass.password; // delete elimina la propiedad de un objeto.
+
+      // Generamos token jwt
+      const jwtToken = generateToken(author._id, author.email);
+
+      return res.status(200).json({ token: jwtToken });
+    } else {
+      return res.status(401).json({ error: "Email y/o password incorrectos" }); // Código 401 para no autorizado
+    }
+
+    // Si falla la escritura...
+  } catch (error) {
+    next(error);
+  }
+});
+
 //  ------------------------------------------------------------------------------------------
 
 // Exportamos
