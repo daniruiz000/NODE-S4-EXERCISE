@@ -16,9 +16,9 @@ const authorSchema = new Schema(
     email: {
       type: String,
       trim: true,
-      unique: true,
+      unique: true, // indica que no puede haber otra entidad con esta propiedad que tenga el mismo valor.
       validate: {
-        validator: validator.isEmail,
+        validator: validator.isEmail, // Validamos haciendo uso de la librería validator y la función isEmail que incorpora.
         message: "Email incorrecto",
       },
       required: true,
@@ -28,7 +28,7 @@ const authorSchema = new Schema(
       trim: true,
       unique: true,
       minLength: [8, "La contraseña debe tener al menos 8 caracteres"],
-      select: false,
+      select: false, // Indica que no lo deseamos mostrar cuando se realicen las peticiones.
       required: true,
     },
     name: { type: String, trim: true, minLength: [3, "Al menos tres letras para el nombre"], maxLength: [22, "Nombre demasiado largo, máximo de 22 caracteres"], required: true },

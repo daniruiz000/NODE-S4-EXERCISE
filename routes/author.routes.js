@@ -1,6 +1,7 @@
 // Importamos express:
 const express = require("express");
 const multer = require("multer");
+
 const fs = require("fs");
 
 const upload = multer({ dest: "public" });
@@ -215,10 +216,9 @@ fetch("http://localhost:3000/author/id del author a borrar",{"method":"DELETE","
 
 //  ------------------------------------------------------------------------------------------
 
-//  Endpoint para actualizar un elemento identificado por id (CRUD: UPDATE):
+//  Endpoint para actualizar un elemento identificado por id pasando antes por el middleware de auntetificación (CRUD: UPDATE):
 
 router.put("/:id", isAuth, async (req, res, next) => {
-  // Si funciona la actualización...
   try {
     const id = req.params.id; //  Recogemos el id de los parametros de la ruta.
 
@@ -251,7 +251,9 @@ fetch("http://localhost:3000/author/id del author a actualizar",{"body": JSON.st
 */
 
 //  ------------------------------------------------------------------------------------------
-//  Endpoin para asociar un logo a una author:
+
+//  Endpoint para asociar una imágen a una author:
+//  Hacemos uso del middleware que nos facilita multer para guardar la imágen en la carpeta de estáticos public.
 
 router.post("/image-upload", upload.single("image"), async (req, res, next) => {
   try {
@@ -261,10 +263,11 @@ router.post("/image-upload", upload.single("image"), async (req, res, next) => {
     const newPath = path + "_" + originalname;
     fs.renameSync(path, newPath);
 
-    // Busqueda de la marca
+    // Busqueda del autor por id
     const authorId = req.body.authorId;
     const author = await Author.findById(authorId);
 
+    // Si hay autor asignamos la imagen al autor y guardamos
     if (author) {
       author.image = newPath;
       await author.save();

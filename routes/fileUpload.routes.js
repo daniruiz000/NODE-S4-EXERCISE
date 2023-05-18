@@ -4,7 +4,7 @@ const fs = require("fs");
 
 const router = express.Router();
 
-const upload = multer({ dest: "public" });
+const upload = multer({ dest: "public" }); // middleware que nos sirve para subir archivos a nuestra carpeta public en este caso.
 
 router.post("/", upload.single("file"), (req, res, next) => {
   try {
